@@ -4,14 +4,16 @@ using System.Threading;
 
 namespace Networking {
 
+    [Serializable]
     public enum Command {
         None,
         Disconnect,
+        Kick,
         UsernameTaken
     }
 
-    public delegate void TcpClientEventHandler( TcpSocket socket );
-    public delegate void TcpClientErrorEventHandler( TcpSocket socket, Exception ex );
+    public delegate void TcpSocketEventHandler( TcpSocket socket );
+    public delegate void TcpSocketErrorEventHandler( TcpSocket socket, Exception ex );
     public delegate void TcpPacketEventHandler( Packet packet );
     public delegate void TcpDataEventHandler( TcpSocket socket, Packet packet );
 

@@ -1,24 +1,14 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Networking {
 
     /// <summary>
     /// An indexed collection class to keep track of all the <see cref="Players"/>.
     /// </summary>
-    public class Players {
-        /// <summary>
-        /// The list of <see cref="Players"/>.
-        /// </summary>
-        private static List<Player> _users = new List<Player>();
-        /// <summary>
-        /// The list of <see cref="TcpSocket"/>s connected to each <see cref="Player"/> by their userID.
-        /// </summary>
-        private static Dictionary<int, TcpSocket> _sockets = new Dictionary<int, TcpSocket>();
+    [Serializable]
+    public class Players : List<Player> {
 
         /// <summary>
         /// This variable will keep track of the last used ID and increments it, so there will never be a duplicate ID.
@@ -26,108 +16,100 @@ namespace Networking {
         private static int _idAutoIncrement;
 
         /// <summary>
+        /// A boolean that controls whether new <see cref="Player"/>-instances are to be added to the <see cref="Players"/>-list or not.
+        /// </summary>
+        public bool AddUsersAutomatically = true;
+
+        /// <summary>
         /// Gets or sets a <see cref="Player"/> by finding their ID.
         /// </summary>
         /// <param name="userID">The ID to search for</param>
         /// <returns>The <see cref="Player"/> if found, null if not</returns>
-        public Player this[ int userID ] {
-            get {
-                foreach ( Player user in _users )
-                    if ( user.ID == userID )
-                        return user;
-                return null;
-            }
-        }
+        public new Player this[ int userID ] => this.FirstOrDefault( user => user.ID == userID );
+
         /// <summary>
         /// Gets or sets a <see cref="Player"/> by finding their username.
         /// </summary>
         /// <param name="username">The username to search for</param>
         /// <returns>The <see cref="Player"/> if found, null if not</returns>
-        public Player this[ string username ] {
-            get {
-                foreach ( Player user in _users )
-                    if ( user.Username == username )
-                        return user;
-                return null;
-            }
-        }
+        public Player this[ string username ] => this.FirstOrDefault( user => user.Username.ToLower() == username.ToLower() );
+
         /// <summary>
         /// Gets or sets a <see cref="Player"/> by finding their username.
         /// </summary>
         /// <param name="socket">The <see cref="TcpSocket"/> to search for</param>
         /// <returns>The <see cref="Player"/> if found, null if not</returns>
-        public Player this[ TcpSocket socket ] {
-            get {
-                foreach ( Player user in _users )
-                    if ( user.Socket == socket )
-                        return user;
-                return null;
-            }
-        }
+        public Player this[ TcpSocket socket ] => this.FirstOrDefault( user => user.Socket == socket );
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Players"/> class
+        /// </summary>
+        public Players() { }
+
+        private Players( IEnumerable<Player> userList ) : base( userList ) { }
 
         /// <summary>
         /// Checks if the given <see cref="Player"/> exists.
         /// </summary>
         /// <param name="player">The <see cref="Player"/> to check</param>
         /// <returns>True if the <see cref="Player"/> was found, false if not</returns>
-        public bool Exists( Player player ) { return _users.Contains( player ); }
+        public bool Exists( Player player ) => Contains( player );
+
         /// <summary>
         /// Checks if the given <see cref="Player"/> exists.
         /// </summary>
         /// <param name="userID">The <see cref="Player"/>'s ID to check</param>
         /// <returns>True if the <see cref="Player"/> was found, false if not</returns>
-        public bool Exists( int userID ) { return this[ userID ] != null; }
+        public bool Exists( int userID ) => this[ userID ] != null;
+
         /// <summary>
         /// Checks if the given <see cref="Player"/> exists.
         /// </summary>
         /// <param name="username">The <see cref="Player"/>'s username to check</param>
         /// <returns>True if the <see cref="Player"/> was found, false if not</returns>
-        public bool Exists( string username ) { return this[ username ] != null; }
+        public bool Exists( string username ) => this[ username ] != null;
+
         /// <summary>
         /// Checks if the given <see cref="Player"/> exists.
         /// </summary>
         /// <param name="socket">The <see cref="Player"/>'s <see cref="TcpSocket"/> to check</param>
         /// <returns>True if the <see cref="Player"/> was found, false if not</returns>
-        public bool Exists( TcpSocket socket ) { return this[ socket ] != null; }
+        public bool Exists( TcpSocket socket ) => this[ socket ] != null;
+
+        /// <summary>
+        /// Creates and adds a new <see cref="Player"/> to the <see cref="Players"/>-list.
+        /// </summary>
+        /// <param name="player">The <see cref="Player"/> to add</param>
+        /// <returns>True if the player was successfully added, false if not</returns>
+        public new bool Add( Player player ) => Add( player, false );
 
         /// <summary>
         /// Creates and adds a new <see cref="Player"/> to the <see cref="Players"/>-list.
         /// </summary>
         /// <param name="username">The username of the <see cref="Player"/> to add</param>
-        /// <param name="socket">The socket to connect the <see cref="Player"/> to</param>
         /// <returns>True if the player was successfully added, false if not</returns>
-        public bool Add( string username, TcpSocket socket ) { return Add( new Player( username ), socket, false ); }
+        public bool Add( string username ) => Add( new Player( username ), false );
 
         /// <summary>
         /// Adds a <see cref="Player"/> to the <see cref="Players"/>-list.
         /// </summary>
         /// <param name="player">The <see cref="Player"/> to add</param>
-        /// <param name="socket">The socket to connect the <see cref="Player"/> to</param>
-        /// <returns>True if the player was successfully added, false if not</returns>
-        public bool Add( Player player, TcpSocket socket ) { return Add( player, socket, false ); }
-
-        /// <summary>
-        /// Adds a <see cref="Player"/> to the <see cref="Players"/>-list.
-        /// </summary>
-        /// <param name="player">The <see cref="Player"/> to add</param>
-        /// <param name="socket">The socket to connect the <see cref="Player"/> to</param>
         /// <param name="overwrite">Whether to overwrite if the player already exists or not (default: false)</param>
         /// <returns>True if the player was successfully added, false if not</returns>
-        public bool Add( Player player, TcpSocket socket, bool overwrite ) {
+        public bool Add( Player player, bool overwrite ) {
             if ( player.ID < 0 )
                 player.ID = _idAutoIncrement++;
 
             if ( this[ player.Username ] != null ) {
-                if ( overwrite ) {
-                    Remove( player.Username );
-                    _users.Add( player );
-                    _sockets.Add( player.ID, socket );
-                } else return false;
+                if ( !overwrite )
+                    return Contains( player );
+                Remove( player );
+                base.Add( player );
             } else {
-                _users.Add( player );
-                _sockets.Add( player.ID, socket );
+                base.Add( player );
             }
-            return true;
+
+            return Contains( player );
         }
 
         /// <summary>
@@ -135,82 +117,73 @@ namespace Networking {
         /// </summary>
         /// <param name="player">The <see cref="Player"/> to remove from the list</param>
         /// <returns>True if the <see cref="Player"/> does not exist in the <see cref="Players"/>-list (anymore), false if the <see cref="Player"/> still exists</returns>
-        public bool Remove( Player player ) {
+        public new bool Remove( Player player ) {
             if ( !Exists( player ) )
                 return true;
 
-            _users.Remove( player );
-            _sockets.Remove( player.ID );
-            return !Exists( player ) && !_sockets.ContainsKey( player.ID );
+            base.Remove( player );
+            return !Exists( player );
         }
+
         /// <summary>
         /// Removes a <see cref="Player"/> from the <see cref="Players"/>-list.
         /// </summary>
         /// <param name="username">The username of the <see cref="Player"/> to remove from the list</param>
         /// <returns>True if the <see cref="Player"/> does not exist in the <see cref="Players"/>-list (anymore), false if the <see cref="Player"/> still exists</returns>
-        public bool Remove( string username ) { return Remove( this[ username ] ); }
+        public bool Remove( string username ) => Remove( this[ username ] );
+
         /// <summary>
         /// Removes a <see cref="Player"/> from the <see cref="Players"/>-list.
         /// </summary>
         /// <param name="userID">The ID of the <see cref="Player"/> to remove from the list</param>
         /// <returns>True if the <see cref="Player"/> does not exist in the <see cref="Players"/>-list (anymore), false if the <see cref="Player"/> still exists</returns>
-        public bool Remove( int userID ) { return Remove( this[ userID ] ); }
+        public bool Remove( int userID ) => Remove( this[ userID ] );
+
         /// <summary>
         /// Removes a <see cref="Player"/> from the <see cref="Players"/>-list.
         /// </summary>
         /// <param name="socket">The socket of the <see cref="Player"/> to remove from the list</param>
         /// <returns>True if the <see cref="Player"/> does not exist in the <see cref="Players"/>-list (anymore), false if the <see cref="Player"/> still exists</returns>
-        public bool Remove( TcpSocket socket ) { return Remove( this[ socket ] ); }
+        public bool Remove( TcpSocket socket ) => Remove( this[ socket ] );
 
         /// <summary>
         /// Clears the <see cref="Players"/>-list of all <see cref="Players"/> and <see cref="TcpSocket"/>s./>
         /// </summary>
         /// <returns>True if successfully cleared, false if not</returns>
-        public bool Clear() {
-            _users.Clear();
-            _sockets.Clear();
-            return _users.Count == 0 && _sockets.Count == 0;
+        public new bool Clear() {
+            base.Clear();
+            return Count == 0;
+        }
+
+        public void ClearDisconnectedUsers() {
+            // Checks which players are either not connected or have null as a socket value and removes those
+            foreach ( Player user in this.Where( user => user.Socket == null || !user.Socket.Connected ) ) {
+                Remove( user );
+            }
         }
 
         /// <summary>
-        /// Gets the <see cref="TcpSocket"/> connected to the <see cref="Player"/> by their userID.
+        /// Replaces the <see cref="Players"/>-list with the given <see cref="List{Player}"/>
         /// </summary>
-        /// <param name="userID">The userID to search for</param>
-        /// <returns></returns>
-        public TcpSocket GetSocket( int userID ) { try { return _sockets[ userID ]; } catch ( KeyNotFoundException ) { return null; } }
-        /// <summary>
-        /// Sets the <see cref="TcpSocket"/> connected to the <see cref="Player"/> by their userID.
-        /// </summary>
-        /// <param name="userID">The userID of the <see cref="Player"/> to set the <see cref="TcpSocket"/> of</param>
-        /// <param name="socket">The <see cref="TcpSocket"/> to set</param>
-        public void SetSocket( int userID, TcpSocket socket ) { _sockets[ userID ] = socket; }
-
-        /// <summary>
-        /// Converts the <see cref="Players"/> class to a <see cref="Players"/>-list.
-        /// </summary>
-        /// <returns>The list of <see cref="Players"/></returns>
-        public List<Player> ToList() { return _users; }
-
-        /// <summary>
-        /// Loads the <see cref="Players"/>-list from an external source (<see cref="TcpSocket"/>s are not available this way).
-        /// </summary>
-        /// <param name="usernameArray">The collection of <see cref="Players"/> to load</param>
-        public void Load( IEnumerable<Player> usernameArray ) {
-            Clear();
-            foreach ( Player user in usernameArray )
-                Add( user, null );
+        /// <param name="players">The <see cref="Players"/>-list to replace</param>
+        /// <param name="userList">The <see cref="List{Player}"/> to replace the <see cref="Players"/>-list with</param>
+        /// <returns>The replaced <see cref="Players"/>-list instance</returns>
+        public static Players operator -( Players players, IEnumerable<Player> userList ) {
+            return new Players( userList );
         }
 
         /// <summary>
-        /// Loads the <see cref="Players"/>-list from an external source (<see cref="TcpSocket"/>s are not available this way).
+        /// Merges a <see cref="List{Player}"/> and a <see cref="Players"/>-list into a <see cref="Players"/>-list
         /// </summary>
-        /// <param name="usernameArray">The collection of <see cref="Players"/> to load</param>
-        public void Load( IEnumerable<string> usernameArray ) {
-            Clear();
-            foreach ( string username in usernameArray )
-                Add( username, null );
+        /// <param name="players">The <see cref="Players"/>-list to merge the <see cref="List{Player}"/> into</param>
+        /// <param name="userList">The <see cref="List{Player}"/> to merge into the <see cref="Players"/>-list</param>
+        /// <returns>The merged <see cref="Players"/>-list instance</returns>
+        public static Players operator +( Players players, IEnumerable<Player> userList ) {
+            foreach ( Player user in userList )
+                players.Add( user );
+
+            return players;
         }
-        public IEnumerator<Player> GetEnumerator() { return _users.GetEnumerator(); }
     }
 
     /// <summary>
@@ -220,16 +193,15 @@ namespace Networking {
     public class Player {
         public int ID = -1;
         public string Username;
-        public TcpSocket Socket {
-            get => Data.Players.GetSocket( ID );
-            set => Data.Players.SetSocket( ID, value );
-        }
+        [NonSerialized] public TcpSocket Socket;
 
         public Player() { }
 
         public Player( string username ) {
             Username = username;
-            Data.Players.Add( this, null );
+
+            if ( !Data.Players.AddUsersAutomatically )
+                Data.Players.Add( this );
         }
 
         /// <summary>
@@ -240,7 +212,9 @@ namespace Networking {
         public Player( string username, TcpSocket socket ) {
             Username = username;
             Socket = socket;
-            Data.Players.Add( this, socket );
+
+            if ( !Data.Players.AddUsersAutomatically )
+                Data.Players.Add( this );
         }
     }
 
