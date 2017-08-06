@@ -71,13 +71,17 @@ namespace RPG_GameServer {
         public static void DataReceived( TcpSocket socket, Packet packet ) {
             switch ( packet.Type.Name.ToLower() ) {
                 default:
-                    RPGConsole.WriteLine( $"Received a packet of unknown type \"{packet.Type.Name}\".", ConsoleColor.Red );
+                    //RPGConsole.WriteLine( $"Received a packet of unknown type \"{packet.Type.Name}\".\r\n", ConsoleColor.Red );
+                    Broadcast( packet );
                     break;
                 case "string":
-                    if ( packet.TryDeserializePacket( out string message ) )
-                        RPGConsole.WriteLine(
-                            $"Received \"{packet.Type.Name}\" from {Data.Players[ socket ].Username}({socket.LocalEndPoint})\n{message}",
-                            ConsoleColor.DarkMagenta );
+                    if ( !packet.TryDeserializePacket( out string message ) ) {
+                        RPGConsole.WriteLine( $"Could not convert packet into a \"{packet.Type.Name}\"", ConsoleColor.Red );
+                        break;
+                    }
+
+                    RPGConsole.WriteLine( $"Received \"{packet.Type.Name}\" from {Data.Players[ socket ].Username}({socket.LocalEndPoint})\n{message}", ConsoleColor.DarkMagenta );
+                    Broadcast( packet );
                     break;
             }
         }
