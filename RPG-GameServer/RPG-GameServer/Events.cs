@@ -9,7 +9,7 @@ namespace RPG_GameServer {
         public static void InitClient( TcpSocket socket ) {
             RPGConsole.WriteLine( "New connection requested." );
             Packet packet = socket.ReceiveOnce();
-            if ( packet.Type.Name.ToLower() != "user" ) {
+            if ( packet.Type.Name.ToLower() != "player" ) {
                 RPGConsole.WriteLine( $"Unexpected type \"{packet.Type.Name}\", expected \"{typeof( Player ).Name}\" instead.", ConsoleColor.Red );
                 return;
             }

@@ -4,12 +4,9 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    void Start()
-    {
+    public void Start() { Network.InitSocket( "quikers.xyz", 23000 ); }
 
-    }
-
-    void Update()
+    public void Update()
     {
 
     }

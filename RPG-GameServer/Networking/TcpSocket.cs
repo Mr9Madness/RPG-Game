@@ -5,6 +5,9 @@ using System.Net.Sockets;
 
 namespace Networking {
 
+    /// <summary>
+    /// A halfway event driven <see cref="TcpClient"/> for dynamic use of the <see cref="TcpClient"/>'s functionality.
+    /// </summary>
     public class TcpSocket : TcpClient {
 
         public event TcpSocketEventHandler ConnectionSuccessful;
@@ -56,6 +59,8 @@ namespace Networking {
             Stream?.Close();
         }
 
+        public void InvokeDataReceived( TcpSocket socket, Packet packet ) { DataReceived?.Invoke( socket, packet ); }
+
         public void Send( object data ) { Send( new Packet( data ) ); }
 
         public void Send( Packet data ) {
@@ -90,7 +95,7 @@ namespace Networking {
                             DataReceived?.Invoke( this, packet );
                         } catch ( Exception ex ) {
                             error = true;
-                            if ( ex.ToString().Contains( "WSACancelBlockingCall" ) )
+                            if ( ex.ToString().Contains( "WSACancelBlockingCall" ) ) 
                                 break;
 
                             ConnectionLost?.Invoke( this, ex );
