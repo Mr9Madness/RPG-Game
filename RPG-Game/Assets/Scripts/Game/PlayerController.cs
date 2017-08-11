@@ -6,8 +6,10 @@ public class PlayerController : MonoBehaviour
 {
     public void Start() { Network.InitSocket( "quikers.xyz", 23000 ); }
 
-    public void Update()
-    {
+    public void OnApplicationQuit() { Network.Socket.Close(); }
+
+    public void Update() {
 
     }
+
 }
