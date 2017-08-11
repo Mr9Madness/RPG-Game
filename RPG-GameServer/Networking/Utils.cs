@@ -1,13 +1,17 @@
-﻿
+﻿using UnityEngine;
 
 namespace Networking {
-    public class Data {
-        public static Players Players { get; set; } = new Players();
+
+    public static class ServerData {
+        public static Players Players = new Players();
     }
 
     public class EntityTransform {
-        public float[] Position = new float[ 3 ];
-        public float[] Rotation = new float[ 3 ];
-        public float[] Scale = new float[ 3 ];
+        public bool Active = false;
+        public Vector3 Position = new Vector3();
+        public Vector3 Rotation = new Vector3();
+        public Vector3 Scale = new Vector3();
     }
+
 }
+

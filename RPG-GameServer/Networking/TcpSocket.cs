@@ -5,9 +5,6 @@ using System.Net.Sockets;
 
 namespace Networking {
 
-    /// <summary>
-    /// A halfway event driven <see cref="TcpClient"/> for dynamic use of the <see cref="TcpClient"/>'s functionality.
-    /// </summary>
     public class TcpSocket : TcpClient {
 
         public event TcpSocketEventHandler ConnectionSuccessful;
@@ -54,12 +51,14 @@ namespace Networking {
             );
         }
 
-        public new void Close() {
+        public new void Close() { Close( true ); }
+        public void Close( bool invokeConnectionLostEvent ) {
+            if ( Connected && invokeConnectionLostEvent )
+                ConnectionLost?.Invoke( this, null );
+
             base.Close();
             Stream?.Close();
         }
-
-        public void InvokeDataReceived( TcpSocket socket, Packet packet ) { DataReceived?.Invoke( socket, packet ); }
 
         public void Send( object data ) { Send( new Packet( data ) ); }
 
@@ -95,7 +94,7 @@ namespace Networking {
                             DataReceived?.Invoke( this, packet );
                         } catch ( Exception ex ) {
                             error = true;
-                            if ( ex.ToString().Contains( "WSACancelBlockingCall" ) ) 
+                            if ( ex.ToString().Contains( "WSACancelBlockingCall" ) )
                                 break;
 
                             ConnectionLost?.Invoke( this, ex );
@@ -105,12 +104,20 @@ namespace Networking {
             );
         }
 
+        public bool TryReceiveOnce( out Packet packet, int bufferSize = 4096 ) {
+            packet = default( Packet );
+            try {
+                packet = ReceiveOnce( bufferSize );
+                return true;
+            } catch ( SocketException ) { return false; }
+        }
+
         public Packet ReceiveOnce( int bufferSize = 4096 ) {
             if ( Stream == null || !Connected )
                 return null;
 
             byte[] bytes = new byte[ bufferSize ];
-            int length = Stream.Read( bytes, 0, bytes.Length );
+            int length = ( Stream?.Read( bytes, 0, bytes.Length ) ).Value;
 
             return new Packet( new List<byte>( bytes ).GetRange( 0, length ) );
         }

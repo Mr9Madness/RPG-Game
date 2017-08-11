@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Networking {
 
@@ -11,21 +12,9 @@ namespace Networking {
     public class Players : List<Player> {
 
         /// <summary>
-        /// This variable will keep track of the last used ID and increments it, so there will never be a duplicate ID.
-        /// </summary>
-        private static int _idAutoIncrement;
-
-        /// <summary>
         /// A boolean that controls whether new <see cref="Player"/>-instances are to be added to the <see cref="Players"/>-list or not.
         /// </summary>
-        public bool AddUsersAutomatically = true;
-
-        /// <summary>
-        /// Gets or sets a <see cref="Player"/> by finding their ID.
-        /// </summary>
-        /// <param name="userID">The ID to search for</param>
-        /// <returns>The <see cref="Player"/> if found, null if not</returns>
-        public new Player this[ int userID ] => this.FirstOrDefault( user => user.ID == userID );
+        public bool AddPlayersAutomatically = true;
 
         /// <summary>
         /// Gets or sets a <see cref="Player"/> by finding their username.
@@ -58,13 +47,6 @@ namespace Networking {
         /// <summary>
         /// Checks if the given <see cref="Player"/> exists.
         /// </summary>
-        /// <param name="userID">The <see cref="Player"/>'s ID to check</param>
-        /// <returns>True if the <see cref="Player"/> was found, false if not</returns>
-        public bool Exists( int userID ) => this[ userID ] != null;
-
-        /// <summary>
-        /// Checks if the given <see cref="Player"/> exists.
-        /// </summary>
         /// <param name="username">The <see cref="Player"/>'s username to check</param>
         /// <returns>True if the <see cref="Player"/> was found, false if not</returns>
         public bool Exists( string username ) => this[ username ] != null;
@@ -84,6 +66,13 @@ namespace Networking {
         public new bool Add( Player player ) => Add( player, false );
 
         /// <summary>
+        /// Adds a range of <see cref="Players"/> to the <see cref="Players"/>-list.
+        /// </summary>
+        /// <param name="userEnumerable">The <see cref="IEnumerable{Player}"/>-range to add</param>
+        /// <returns>True if all users were successfully added, false if not</returns>
+        public new bool AddRange( IEnumerable<Player> userEnumerable ) => !( userEnumerable.Where( user => !Add( user, false ) ).ToArray().Length > 0 );
+
+        /// <summary>
         /// Creates and adds a new <see cref="Player"/> to the <see cref="Players"/>-list.
         /// </summary>
         /// <param name="username">The username of the <see cref="Player"/> to add</param>
@@ -97,19 +86,14 @@ namespace Networking {
         /// <param name="overwrite">Whether to overwrite if the player already exists or not (default: false)</param>
         /// <returns>True if the player was successfully added, false if not</returns>
         public bool Add( Player player, bool overwrite ) {
-            if ( player.ID < 0 )
-                player.ID = _idAutoIncrement++;
-
-            if ( this[ player.Username ] != null ) {
+            if ( Exists( player ) ) {
                 if ( !overwrite )
-                    return Contains( player );
+                    return false;
                 Remove( player );
-                base.Add( player );
-            } else {
-                base.Add( player );
             }
+            base.Add( player );
 
-            return Contains( player );
+            return Exists( player );
         }
 
         /// <summary>
@@ -135,13 +119,6 @@ namespace Networking {
         /// <summary>
         /// Removes a <see cref="Player"/> from the <see cref="Players"/>-list.
         /// </summary>
-        /// <param name="userID">The ID of the <see cref="Player"/> to remove from the list</param>
-        /// <returns>True if the <see cref="Player"/> does not exist in the <see cref="Players"/>-list (anymore), false if the <see cref="Player"/> still exists</returns>
-        public bool Remove( int userID ) => Remove( this[ userID ] );
-
-        /// <summary>
-        /// Removes a <see cref="Player"/> from the <see cref="Players"/>-list.
-        /// </summary>
         /// <param name="socket">The socket of the <see cref="Player"/> to remove from the list</param>
         /// <returns>True if the <see cref="Player"/> does not exist in the <see cref="Players"/>-list (anymore), false if the <see cref="Player"/> still exists</returns>
         public bool Remove( TcpSocket socket ) => Remove( this[ socket ] );
@@ -155,34 +132,11 @@ namespace Networking {
             return Count == 0;
         }
 
-        public void ClearDisconnectedUsers() {
-            // Checks which players are either not connected or have null as a socket value and removes those
-            foreach ( Player user in this.Where( user => user.Socket == null || !user.Socket.Connected ) ) {
+        public void ClearDisconnectedPlayers() {
+            // Checks which users are either not connected or have null as a socket value and removes those
+            foreach ( Player user in this.Where( user => user.Socket == null || !user.Socket.Connected ).ToArray() ) {
                 Remove( user );
             }
-        }
-
-        /// <summary>
-        /// Replaces the <see cref="Players"/>-list with the given <see cref="List{Player}"/>
-        /// </summary>
-        /// <param name="players">The <see cref="Players"/>-list to replace</param>
-        /// <param name="userList">The <see cref="List{Player}"/> to replace the <see cref="Players"/>-list with</param>
-        /// <returns>The replaced <see cref="Players"/>-list instance</returns>
-        public static Players operator -( Players players, IEnumerable<Player> userList ) {
-            return new Players( userList );
-        }
-
-        /// <summary>
-        /// Merges a <see cref="List{Player}"/> and a <see cref="Players"/>-list into a <see cref="Players"/>-list
-        /// </summary>
-        /// <param name="players">The <see cref="Players"/>-list to merge the <see cref="List{Player}"/> into</param>
-        /// <param name="userList">The <see cref="List{Player}"/> to merge into the <see cref="Players"/>-list</param>
-        /// <returns>The merged <see cref="Players"/>-list instance</returns>
-        public static Players operator +( Players players, IEnumerable<Player> userList ) {
-            foreach ( Player user in userList )
-                players.Add( user );
-
-            return players;
         }
     }
 
@@ -190,19 +144,28 @@ namespace Networking {
     /// A data container class used to save the player's info like their username and socket information.
     /// </summary>
     [Serializable]
-    public class Player {
-        public int ID = -1;
+    public class Player : EntityTransform {
         public string Username;
         [NonSerialized] public TcpSocket Socket;
 
+        private void Init( string username, bool active = false, Vector3 position = new Vector3(), Vector3 rotation = new Vector3(), Vector3 scale = new Vector3() ) {
+            Username = username;
+            Active = active;
+            Position = position;
+            Rotation = rotation;
+            Scale = scale;
+
+            if ( !ServerData.Players.AddPlayersAutomatically )
+                ServerData.Players.Add( this );
+        }
+
         public Player() { }
 
-        public Player( string username ) {
-            Username = username;
-
-            if ( !Data.Players.AddUsersAutomatically )
-                Data.Players.Add( this );
-        }
+        public Player( string username, bool active, Vector3 position, Vector3 rotation, Vector3 scale ) => Init( username, active, position, rotation, scale );
+        public Player( string username, bool active, Vector3 position, Vector3 rotation ) => Init( username, active, position, rotation );
+        public Player( string username, bool active, Vector3 position ) => Init( username, active, position );
+        public Player( string username, bool active ) => Init( username, active );
+        public Player( string username ) => Init( username );
 
         /// <summary>
         /// Creates a new player
@@ -213,8 +176,8 @@ namespace Networking {
             Username = username;
             Socket = socket;
 
-            if ( !Data.Players.AddUsersAutomatically )
-                Data.Players.Add( this );
+            if ( !ServerData.Players.AddPlayersAutomatically )
+                ServerData.Players.Add( this );
         }
     }
 

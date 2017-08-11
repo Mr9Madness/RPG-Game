@@ -5,11 +5,48 @@ using System.Threading;
 namespace Networking {
 
     [Serializable]
-    public enum Command {
-        None,
+    public enum CommandType {
+        // Client sided handling
         Disconnect,
         Kick,
-        UsernameTaken
+        UsernameTaken,
+
+        // Server sided handling
+        // Player
+        GetUser,
+        GetAllPlayers,
+    }
+
+    [Serializable]
+    public class Command {
+        public CommandType Type;
+        [NonSerialized] public Packet CommandPacket;
+        [NonSerialized] public TcpSocket Socket;
+
+        public Command( CommandType type ) {
+            Type = type;
+        }
+        public Command( CommandType type, TcpSocket socket ) {
+            Type = type;
+            Socket = socket;
+        }
+        public Command( CommandType type, Packet commandPacket ) {
+            Type = type;
+            CommandPacket = commandPacket;
+        }
+        public Command( CommandType type, Packet commandPacket, TcpSocket socket ) {
+            Type = type;
+            CommandPacket = commandPacket;
+            Socket = socket;
+        }
+
+    }
+
+    [Serializable]
+    public class UserCommand : Command {
+        public string Username;
+        public UserCommand( CommandType type ) : base( type ) { }
+        public UserCommand( CommandType type, string username ) : base( type ) => Username = username;
     }
 
     public delegate void TcpSocketEventHandler( TcpSocket socket );
@@ -45,8 +82,8 @@ namespace Networking {
         }
 
         public static void StopAllThreads() {
-            foreach ( Thread t in _threadList )
-                t.Abort();
+            foreach ( Thread t in _threadList.ToArray() )
+                t?.Abort();
         }
     }
 

@@ -10,12 +10,12 @@ namespace Networking {
 
         public EndPoint LocalEndPoint => LocalEndpoint;
 
-        public TcpServer( int port, TcpSocketEventHandler callback ) : base( IPAddress.Any, port ) {
-            ClientConnectionRequested += callback;
+        public TcpServer( int port, TcpSocketEventHandler acceptClientCallback ) : base( IPAddress.Any, port ) {
+            ClientConnectionRequested += acceptClientCallback;
             BeginAccepting();
         }
-        public TcpServer( IPAddress ip, int port, TcpSocketEventHandler callback ) : base( ip, port ) {
-            ClientConnectionRequested += callback;
+        public TcpServer( IPAddress ip, int port, TcpSocketEventHandler acceptClientCallback ) : base( ip, port ) {
+            ClientConnectionRequested += acceptClientCallback;
             BeginAccepting();
         }
 
