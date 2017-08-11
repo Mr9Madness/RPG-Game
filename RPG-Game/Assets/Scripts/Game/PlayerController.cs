@@ -7,7 +7,8 @@ public class PlayerController : MonoBehaviour
     Vector3 Acceleration;
     Vector3 CameraAcceleration;
 
-    public float velocity = 5;
+    public float Sensitivity = 5f;
+    public float Velocity = 5f;
     CharacterController modelController;
 
     public Camera Camera;
@@ -31,25 +32,24 @@ public class PlayerController : MonoBehaviour
 
     void ModelMovement()
     {
-        Acceleration = Vector3.zero;
-
-        Acceleration.x = Input.GetAxis( "Horizontal" ) * velocity;
-        Acceleration.z = Input.GetAxis( "Vertical" ) * velocity;
+        Acceleration.x = Input.GetAxis( "Horizontal" ) * Velocity;
+        Acceleration.z = Input.GetAxis( "Vertical" ) * Velocity;
 
         Acceleration = transform.rotation * Acceleration;
 
         modelController.Move( Acceleration * Time.deltaTime );
+
+        Debug.Log( "Accel: " + Acceleration );
+
     }
 
     void CameraRotation()
     {
-        CameraAcceleration = Vector3.zero;
-
         CameraAcceleration.x = Input.GetAxis( "Camera Horizontal" );
         CameraAcceleration.y = Input.GetAxis( "Camera Vertical" );
 
+        Camera.transform.Translate( CameraAcceleration * Sensitivity * Time.deltaTime );
 
-
-        //Debug.Log( CameraAcceleration );
+        Debug.Log( "Camera Accel: " + CameraAcceleration );
     }
 }
