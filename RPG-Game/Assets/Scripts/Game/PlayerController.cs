@@ -16,7 +16,7 @@ public class PlayerController : MonoBehaviour
     public void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-        Data.Network.InitSocket( "quikers.xyz", 23000 );
+        Data.Network.InitSocket( "127.0.0.1", 23000 );//"quikers.xyz", 23000 );
         modelController = GetComponent<CharacterController>();
     }
 
