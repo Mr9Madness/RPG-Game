@@ -32,30 +32,24 @@ public class PlayerController : MonoBehaviour
 
     void ModelMovement()
     {
-        Acceleration = Vector3.zero;
-
         Acceleration.x = Input.GetAxis( "Horizontal" ) * Velocity;
         Acceleration.z = Input.GetAxis( "Vertical" ) * Velocity;
 
         Acceleration = transform.rotation * Acceleration;
 
         modelController.Move( Acceleration * Time.deltaTime );
+
+        Debug.Log( "Accel: " + Acceleration );
+
     }
 
     void CameraRotation()
     {
-        CameraAcceleration = Vector3.zero;
-
         CameraAcceleration.x = Input.GetAxis( "Camera Horizontal" );
         CameraAcceleration.y = Input.GetAxis( "Camera Vertical" );
 
         Camera.transform.Translate( CameraAcceleration * Sensitivity * Time.deltaTime );
 
-        //TProtationX += ( Input.GetAxis( "Horizontal" ) * cameraSensitivity < -0.15f ? Input.GetAxis( "Horizontal" ) * cameraSensitivity : Input.GetAxis( "Horizontal" ) * cameraSensitivity > 0.15f ? Input.GetAxis( "Horizontal" ) * cameraSensitivity : 0f );
-        //transform.localEulerAngles = new Vector3( 0f, TProtationX );
-        //Camera.main.transform.Translate( CameraPosTpY * cameraSensitivity * Time.deltaTime );
-
-
-        //Debug.Log( CameraAcceleration );
+        Debug.Log( "Camera Accel: " + CameraAcceleration );
     }
 }
