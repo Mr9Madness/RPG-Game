@@ -7,7 +7,8 @@ public class PlayerController : MonoBehaviour
     Vector3 Acceleration;
     Vector3 CameraAcceleration;
 
-    public float velocity = 5;
+    public float Sensitivity = 5f;
+    public float Velocity = 5f;
     CharacterController modelController;
 
     public Camera Camera;
@@ -33,8 +34,8 @@ public class PlayerController : MonoBehaviour
     {
         Acceleration = Vector3.zero;
 
-        Acceleration.x = Input.GetAxis( "Horizontal" ) * velocity;
-        Acceleration.z = Input.GetAxis( "Vertical" ) * velocity;
+        Acceleration.x = Input.GetAxis( "Horizontal" ) * Velocity;
+        Acceleration.z = Input.GetAxis( "Vertical" ) * Velocity;
 
         Acceleration = transform.rotation * Acceleration;
 
@@ -48,6 +49,11 @@ public class PlayerController : MonoBehaviour
         CameraAcceleration.x = Input.GetAxis( "Camera Horizontal" );
         CameraAcceleration.y = Input.GetAxis( "Camera Vertical" );
 
+        Camera.transform.Translate( CameraAcceleration * Sensitivity * Time.deltaTime );
+
+        //TProtationX += ( Input.GetAxis( "Horizontal" ) * cameraSensitivity < -0.15f ? Input.GetAxis( "Horizontal" ) * cameraSensitivity : Input.GetAxis( "Horizontal" ) * cameraSensitivity > 0.15f ? Input.GetAxis( "Horizontal" ) * cameraSensitivity : 0f );
+        //transform.localEulerAngles = new Vector3( 0f, TProtationX );
+        //Camera.main.transform.Translate( CameraPosTpY * cameraSensitivity * Time.deltaTime );
 
 
         //Debug.Log( CameraAcceleration );
