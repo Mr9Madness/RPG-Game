@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    Vector3 Accelaration;
-    Vector3 CameraAccelaration;
+    Vector3 Acceleration;
+    Vector3 CameraAcceleration;
 
     public float velocity = 5;
     CharacterController modelController;
@@ -16,11 +16,11 @@ public class PlayerController : MonoBehaviour
     public void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-        Network.InitSocket( "quikers.xyz", 23000 );
+        Data.Network.InitSocket( "quikers.xyz", 23000 );
         modelController = GetComponent<CharacterController>();
     }
 
-    public void OnApplicationQuit() { Network.Socket.Close(); }
+    public void OnApplicationQuit() { Data.Network.Socket.Close(); }
 
     void Update()
     {
@@ -31,25 +31,25 @@ public class PlayerController : MonoBehaviour
 
     void ModelMovement()
     {
-        Accelaration = Vector3.zero;
+        Acceleration = Vector3.zero;
 
-        Accelaration.x = Input.GetAxis( "Horizontal" ) * velocity;
-        Accelaration.z = Input.GetAxis( "Vertical" ) * velocity;
+        Acceleration.x = Input.GetAxis( "Horizontal" ) * velocity;
+        Acceleration.z = Input.GetAxis( "Vertical" ) * velocity;
 
-        Accelaration = transform.rotation * Accelaration;
+        Acceleration = transform.rotation * Acceleration;
 
-        modelController.Move( Accelaration * Time.deltaTime );
+        modelController.Move( Acceleration * Time.deltaTime );
     }
 
     void CameraRotation()
     {
-        CameraAccelaration = Vector3.zero;
+        CameraAcceleration = Vector3.zero;
 
-        CameraAccelaration.x = Input.GetAxis( "Camera Horizontal" );
-        CameraAccelaration.y = Input.GetAxis( "Camera Vertical" );
+        CameraAcceleration.x = Input.GetAxis( "Camera Horizontal" );
+        CameraAcceleration.y = Input.GetAxis( "Camera Vertical" );
 
 
 
-        //Debug.Log( CameraAccelaration );
+        //Debug.Log( CameraAcceleration );
     }
 }

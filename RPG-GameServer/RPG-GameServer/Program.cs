@@ -36,7 +36,7 @@ namespace RPG_GameServer {
                 if ( value )
                     ThreadHandler.Create( () => {
                         while ( GameActive ) {
-                            Broadcast( ServerData.Players.GetTransform() );
+                            //Broadcast( ServerData.Players.GetTransform() );
                             Thread.Sleep( 1 );
                         }
                     } );
