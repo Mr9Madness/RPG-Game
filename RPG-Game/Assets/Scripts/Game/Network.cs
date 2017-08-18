@@ -8,7 +8,8 @@ public class Network : MonoBehaviour {
 
     // Use this for initialization
     void Start() {
-        Data.Network.InitSocket( "127.0.0.1", 23000 );//"quikers.xyz", 23000 );
+        Data.Network.InitSocket( "quikers.xyz", 23000 );
+        //Data.Network.InitSocket( "127.0.0.1", 23000 );
         Data.Network.PlayerPrefab = PlayerPrefab;
     }
 
