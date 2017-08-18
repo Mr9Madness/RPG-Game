@@ -5,11 +5,24 @@ namespace Networking {
 
     public static class UnityExtensionMethods {
         public static float[] ToArray( this Vector3 v ) => new[] { v.x, v.y, v.z };
-        public static Vector3 ToVector3( this float[] f ) => new Vector3( f[0], f[1], f[2] );
+        public static Vector3 ToVector3( this float[] f ) => new Vector3( f[ 0 ], f[ 1 ], f[ 2 ] );
     }
 
     public static class ServerData {
         public static Players Players = new Players();
+    }
+
+    [Serializable]
+    public class PlayerEvent {
+        public Players PlayerList = ServerData.Players;
+        public Player PlayerInQuestion;
+
+        public bool IsPlayerAdded;
+
+        public PlayerEvent( Player playerInQuestion, bool isPlayerAdded ) {
+            PlayerInQuestion = playerInQuestion;
+            IsPlayerAdded = isPlayerAdded;
+        }
     }
 
     [Serializable]

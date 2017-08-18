@@ -21,14 +21,14 @@ namespace Networking {
         /// </summary>
         /// <param name="username">The username to search for</param>
         /// <returns>The <see cref="Player"/> if found, null if not</returns>
-        public Player this[ string username ] => this.FirstOrDefault( user => user.Username.ToLower() == username.ToLower() );
+        public Player this[ string username ] => this.FirstOrDefault( player => player.Username.ToLower() == username.ToLower() );
 
         /// <summary>
         /// Gets or sets a <see cref="Player"/> by finding their username.
         /// </summary>
         /// <param name="socket">The <see cref="TcpSocket"/> to search for</param>
         /// <returns>The <see cref="Player"/> if found, null if not</returns>
-        public Player this[ TcpSocket socket ] => this.FirstOrDefault( user => user.Socket == socket );
+        public Player this[ TcpSocket socket ] => this.FirstOrDefault( player => player.Socket == socket );
 
         /// <summary>
         /// Creates a new instance of the <see cref="Players"/> class
@@ -70,7 +70,7 @@ namespace Networking {
         /// </summary>
         /// <param name="userEnumerable">The <see cref="IEnumerable{Player}"/>-range to add</param>
         /// <returns>True if all users were successfully added, false if not</returns>
-        public new bool AddRange( IEnumerable<Player> userEnumerable ) => !( userEnumerable.Where( user => !Add( user, false ) ).ToArray().Length > 0 );
+        public new bool AddRange( IEnumerable<Player> userEnumerable ) => !( userEnumerable.Where( player => !Add( player, false ) ).ToArray().Length > 0 );
 
         /// <summary>
         /// Creates and adds a new <see cref="Player"/> to the <see cref="Players"/>-list.
@@ -134,8 +134,8 @@ namespace Networking {
 
         public void ClearDisconnectedPlayers() {
             // Checks which users are either not connected or have null as a socket value and removes those
-            foreach ( Player user in this.Where( user => user.Socket == null || !user.Socket.Connected ).ToArray() ) {
-                Remove( user );
+            foreach ( Player player in this.Where( player => player.Socket == null || !player.Socket.Connected ).ToArray() ) {
+                Remove( player );
             }
         }
     }

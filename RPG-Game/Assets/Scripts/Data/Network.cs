@@ -2,6 +2,8 @@
 using System.Threading;
 using Networking;
 
+using UnityEditorInternal;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Data {
@@ -10,6 +12,8 @@ namespace Data {
         public static Players players;
 
         public static TcpSocket Socket;
+
+        public static GameObject PlayerPrefab;
 
         public static void InitSocket( string hostname, int port ) { InitSocket( hostname, port, DefaultSuccessful, DefaultFailed, DefaultLost, DefaultReceived, DefaultSent ); }
 
@@ -60,7 +64,16 @@ namespace Data {
                     if ( packet.TryDeserializePacket( out command ) )
                         HandleCommand( command );
                     break;
-                case "entitytransform":
+                case "playerevent":
+                    PlayerEvent pEvent;
+                    if ( !packet.TryDeserializePacket( out pEvent ) )
+                        break;
+
+                    if ( pEvent.IsPlayerAdded ) {
+                        players = pEvent.PlayerList;
+                        GameObject.Instantiate( PlayerPrefab );
+                    }
+
                     break;
             }
         }

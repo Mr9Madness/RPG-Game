@@ -27,6 +27,7 @@ namespace RPG_GameServer {
 
         public static TcpServer Server;
 
+        private static Thread gameThread;
         private static bool _gameActive;
         public static bool GameActive {
             get => _gameActive;
@@ -34,12 +35,14 @@ namespace RPG_GameServer {
                 _gameActive = value;
 
                 if ( value )
-                    ThreadHandler.Create( () => {
+                    gameThread = ThreadHandler.Create( () => {
                         while ( GameActive ) {
-                            //Broadcast( ServerData.Players.GetTransform() );
-                            Thread.Sleep( 1 );
+                            Broadcast( ServerData.Players );
+                            Thread.Sleep( 10 );
                         }
                     } );
+                else
+                    ThreadHandler.Remove( gameThread );
             }
         }
 
@@ -102,23 +105,23 @@ namespace RPG_GameServer {
                     case "/online":
                     case "/list": {
                             RPGConsole.WriteLine( "Currently online users:\n", ConsoleColor.DarkCyan );
-                            foreach ( Player user in ServerData.Players )
-                                RPGConsole.WriteLine( $"{user.Username} ({user.Socket.LocalEndPoint})" );
+                            foreach ( Player player in ServerData.Players )
+                                RPGConsole.WriteLine( $"{player.Username} ({player.Socket.LocalEndPoint})" );
                         }
                         break;
                     case "/kick": {
                             if ( split.Length <= 1 ) {
-                                RPGConsole.WriteLine( "No parameters given, please specify the user's username like so (without brackets):\r\n/kick [username]", ConsoleColor.Red );
+                                RPGConsole.WriteLine( "No parameters given, please specify the player's username like so (without brackets):\r\n/kick [username]", ConsoleColor.Red );
                                 break;
                             }
                             if ( !ServerData.Players.Exists( split[ 1 ] ) ) {
-                                RPGConsole.WriteLine( $"Could not find user \"{split[ 1 ]}\"", ConsoleColor.Red );
+                                RPGConsole.WriteLine( $"Could not find player \"{split[ 1 ]}\"", ConsoleColor.Red );
                                 break;
                             }
 
-                            Player user = ServerData.Players[ split[ 1 ] ];
-                            Broadcast( $"{user.Username} was kicked from the server." );
-                            ClientDisconnected( user.Socket, null );
+                            Player player = ServerData.Players[ split[ 1 ] ];
+                            Broadcast( $"{player.Username} was kicked from the server." );
+                            ClientDisconnected( player.Socket, null );
                         }
                         break;
                     case "/game": {

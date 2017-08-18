@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
-{
+public class PlayerController : MonoBehaviour {
     Vector3 Acceleration;
     Vector3 CameraAcceleration;
 
@@ -14,24 +13,20 @@ public class PlayerController : MonoBehaviour
     public Camera Camera;
     public GameObject Model;
 
-    public void Start()
-    {
+    public void Start() {
         Cursor.lockState = CursorLockMode.Locked;
-        Data.Network.InitSocket( "127.0.0.1", 23000 );//"quikers.xyz", 23000 );
         modelController = GetComponent<CharacterController>();
     }
 
     public void OnApplicationQuit() { Data.Network.Socket.Close(); }
 
-    void Update()
-    {
+    void Update() {
         ModelMovement();
 
         CameraRotation();
     }
 
-    void ModelMovement()
-    {
+    void ModelMovement() {
         Acceleration.x = Input.GetAxis( "Horizontal" ) * Velocity;
         Acceleration.z = Input.GetAxis( "Vertical" ) * Velocity;
 
@@ -43,8 +38,7 @@ public class PlayerController : MonoBehaviour
 
     }
 
-    void CameraRotation()
-    {
+    void CameraRotation() {
         CameraAcceleration.x = Input.GetAxis( "Camera Horizontal" );
         CameraAcceleration.y = Input.GetAxis( "Camera Vertical" );
 
