@@ -8,18 +8,28 @@ using System.Text;
 
 namespace Networking {
 
+    #region Event Handlers
+
+    public delegate void TcpPacketEventHandler( Packet packet );
+
+    #endregion
+
     public class Packet {
 
-        // EVENT HANDLERS
+        #region Events
 
         public event TcpPacketEventHandler ParseFailed;
 
-        // VARIABLES
+        #endregion
+
+        #region Local Variables
 
         public Type Type { get { try { return Content.GetType(); } catch ( Exception ) { return null; } } }
         public object Content;
 
-        // CONSTRUCTORS
+        #endregion
+
+        #region Constructors
 
         /// <summary>
         /// The standard <see cref="Packet"/>. Contains no information.
@@ -36,7 +46,9 @@ namespace Networking {
         /// <param name="bytes">The <see cref="byte"/> array to convert from</param>
         public Packet( IEnumerable<byte> bytes ) { Content = Deserialize( bytes ); ParseFailed += ParseFailedMessage; }
 
-        // FUNCTIONS
+        #endregion
+
+        #region Methods
 
         private static void ParseFailedMessage( Packet packet ) { Console.WriteLine( "Failed to deserialize packet." ); }
 
@@ -74,7 +86,7 @@ namespace Networking {
             return false;
         }
 
-        // INTERNAL CLASS TOOLS
+        #region Internal Class Tools
 
         /// <summary>
         /// Converts an <see cref="object"/> of any type to a <see cref="byte"/> array.
@@ -102,6 +114,10 @@ namespace Networking {
             using ( MemoryStream ms = new MemoryStream( byteArray ) )
                 return new BinaryFormatter().Deserialize( ms );
         }
+
+        #endregion
+
+        #endregion
 
     }
 

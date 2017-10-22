@@ -9,39 +9,39 @@ namespace RPG_GameServer {
         public static void InitClient( TcpSocket socket ) {
             RPGConsole.WriteLine( "New connection requested." );
             Packet packet = socket.ReceiveOnce();
-            if ( packet.Type?.Name.ToLower() != "player" ) {
-                RPGConsole.WriteLine( $"Unexpected type \"{packet.Type?.Name}\", expected \"{typeof( Player ).Name}\" instead.", ConsoleColor.Red );
+            if ( packet.Type?.Name.ToLower() != "user" ) {
+                RPGConsole.WriteLine( $"Unexpected type \"{packet.Type?.Name}\", expected \"{typeof( User ).Name}\" instead.", ConsoleColor.Red );
                 return;
             }
-            if ( !packet.TryDeserializePacket( out Player player ) ) {
-                RPGConsole.WriteLine( $"Could not deserialize packet into \"{typeof( Player ).Name}\". Are you using outdated software?", ConsoleColor.Red );
+            if ( !packet.TryDeserializePacket( out User user ) ) {
+                RPGConsole.WriteLine( $"Could not deserialize packet into \"{typeof( User ).Name}\". Are you using outdated software?", ConsoleColor.Red );
                 return;
             }
 
-            if ( !ServerData.Players.Exists( player.Username ) ) {
+            if ( !Data.UserList.Exists( user.Username ) ) {
                 socket.ConnectionLost += ClientDisconnected;
                 socket.DataReceived += DataReceived;
                 socket.DataSent += DataSent;
                 socket.Receive();
 
-                player.Socket = socket;
+                user.Socket = socket;
 
-                ServerData.Players.Add( player );
-                RPGConsole.WriteLine( $"{player.Username} has connected.", ConsoleColor.Green );
+                Data.UserList.Add( user );
+                RPGConsole.WriteLine( $"{user.Username} has connected.", ConsoleColor.Green );
 
-                Broadcast( new PlayerEvent( player, true ) );
+                Broadcast( new PlayerEvent( user, true ) );
             } else {
-                Player oldUser = ServerData.Players[ player.Username ];
+                User oldUser = Data.UserList[ user.Username ];
 
                 if ( oldUser.Socket.RemoteEndPoint.ToString().Split( ':' )[ 0 ] != socket.RemoteEndPoint.ToString().Split( ':' )[ 0 ] )
-                    RPGConsole.WriteLine( $"Duplicate username in login attempt: \"{player.Username}\", connection rejected.", ConsoleColor.Red );
+                    RPGConsole.WriteLine( $"Duplicate username in login attempt: \"{user.Username}\", connection rejected.", ConsoleColor.Red );
 
                 socket.Send( new Command(CommandType.UsernameTaken) );
 
                 Thread.Sleep( 10 ); // Make sure that all messages have been sent before disconnecting
                 socket.Close();
 
-                Broadcast( ServerData.Players );
+                Broadcast( Data.UserList );
             }
         }
 
@@ -51,22 +51,22 @@ namespace RPG_GameServer {
             string error = "";
             if ( ex != null && ex.GetType() != typeof( IOException ) && ex.GetType() != typeof( NullReferenceException ) && ex.GetType() != typeof( ObjectDisposedException ) )
                 error = "\n" + ex;
-            if ( !ServerData.Players.Exists( socket ) ) {
-                RPGConsole.WriteLine( $"A player lost connection.{error}", ConsoleColor.Red );
+            if ( !Data.UserList.Exists( socket ) ) {
+                RPGConsole.WriteLine( $"A user lost connection.{error}", ConsoleColor.Red );
 
-                ServerData.Players.ClearDisconnectedPlayers();
-                Broadcast( ServerData.Players );
+                Data.UserList.ClearDisconnectedPlayers();
+                Broadcast( Data.UserList );
                 return;
             }
-            Player player = ServerData.Players[ socket ];
+            User user = Data.UserList[ socket ];
 
-            RPGConsole.WriteLine( $"{player.Username}({socket.LocalEndPoint}) Lost connection.{error}", ConsoleColor.Red );
-            Broadcast( new PlayerEvent( player, false ) );
+            RPGConsole.WriteLine( $"{user.Username}({socket.LocalEndPoint}) Lost connection.{error}", ConsoleColor.Red );
+            Broadcast( new PlayerEvent( user, false ) );
 
             socket.Close();
-            ServerData.Players.Remove( socket );
+            Data.UserList.Remove( socket );
 
-            Broadcast( ServerData.Players );
+            Broadcast( Data.UserList );
 
             socket.ConnectionLost += ClientDisconnected;
         }
@@ -83,7 +83,7 @@ namespace RPG_GameServer {
                         break;
                     }
 
-                    RPGConsole.WriteLine( $"Received \"{packet.Type.Name}\" from {ServerData.Players[ socket ].Username}({socket.LocalEndPoint})\n{message}", ConsoleColor.DarkMagenta );
+                    RPGConsole.WriteLine( $"Received \"{packet.Type.Name}\" from {Data.UserList[ socket ].Username}({socket.LocalEndPoint})\n{message}", ConsoleColor.DarkMagenta );
                     Broadcast( packet );
                     break;
             }
