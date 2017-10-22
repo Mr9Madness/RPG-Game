@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using Networking;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace Networking {
 
@@ -63,12 +64,12 @@ namespace Networking {
     }
 
     [Serializable]
-    public class UserList : List<User> {
+    public class UserList : IEnumerable<User> {
 
         #region Events
 
         public delegate void UserEvent( User user );
-        public event UserEvent OnUsersChanged;
+        public event UserEvent OnUserListChanged;
         public event UserEvent OnUserAdded;
         public event UserEvent OnUserRemoved;
 
@@ -76,16 +77,17 @@ namespace Networking {
 
         #region Local Variables
 
+        private List< User > _userList = new List<User>();
         private int _idAutoIncrement;
 
         #endregion
 
         #region Indexer Properties
 
-        public User this[ User user ] { get { try { return this.First( u => u == user ); } catch ( Exception ) { return null; } } }
-        public new User this[ int id ] { get { try { return this.First( u => u.ID == id ); } catch ( Exception ) { return null; } } }
-        public User this[ string username ] { get { try { return this.First( u => u.Username.ToLower() == username.ToLower() ); } catch ( Exception ) { return null; } } }
-        public User this[ TcpSocket connectionInfo ] { get { try { return this.First( u => u.ConnectionInfo == connectionInfo ); } catch ( Exception ) { return null; } } }
+        public User this[ User user ] { get { try { return _userList.First( u => u == user ); } catch ( Exception ) { return null; } } }
+        public User this[ int id ] { get { try { return _userList.First( u => u.ID == id ); } catch ( Exception ) { return null; } } }
+        public User this[ string username ] { get { try { return _userList.First( u => u.Username.ToLower() == username.ToLower() ); } catch ( Exception ) { return null; } } }
+        public User this[ TcpSocket connectionInfo ] { get { try { return _userList.First( u => u.ConnectionInfo == connectionInfo ); } catch ( Exception ) { return null; } } }
 
         #endregion
 
@@ -132,7 +134,7 @@ namespace Networking {
         } ).Wait();
 
         public void RemoveUserAt( int index ) => Task.Run( () => {
-            if ( base[ index ] == null )
+            if ( _userList[ index ] == null )
                 return;
 
             RemoveAt( index );
@@ -140,24 +142,26 @@ namespace Networking {
 
         #region Overrides
 
-        private new void Add( User user ) {
+        private void Add( User user ) {
             OnUserAdded?.Invoke( user );
-            OnUsersChanged?.Invoke( user );
-            base.Add( user );
+            OnUserListChanged?.Invoke( user );
+            _userList.Add( user );
         }
 
-        private new void Remove( User user ) {
+        private void Remove( User user ) {
             OnUserRemoved?.Invoke( user );
-            OnUsersChanged?.Invoke( user );
-            base.Remove( user );
+            OnUserListChanged?.Invoke( user );
+            _userList.Remove( user );
         }
 
-        private new void RemoveAt( int index ) {
-            User user = base[ index ];
+        private void RemoveAt( int index ) {
+            User user = _userList[ index ];
             OnUserRemoved?.Invoke( user );
-            OnUsersChanged?.Invoke( user );
-            base.RemoveAt( index );
+            OnUserListChanged?.Invoke( user );
+            _userList.RemoveAt( index );
         }
+
+        public void Clear() { _userList.Clear(); }
 
         #endregion
 
@@ -178,8 +182,24 @@ namespace Networking {
         /// Assigns an ID to every <see cref="User"/> with an ID of less than 0.
         /// </summary>
         public void AssignIDs() {
-            foreach ( User user in this.ToList().Where( u => u.ID < 0 ) )
+            foreach ( User user in _userList.ToList().Where( u => u.ID < 0 ) )
                 user.ID = _idAutoIncrement++;
+        }
+
+        /// <summary>
+        /// Removes all the <see cref="User"/>s currently not connected (only usable on server-side).
+        /// </summary>
+        public void ClearDisconnectedPlayers() {
+            foreach ( User user in _userList.ToList().Where( u => u.ConnectionInfo == null || !u.ConnectionInfo.Connected ) )
+                RemoveUser( user );
+        }
+
+        public IEnumerator<User> GetEnumerator() {
+            throw new NotImplementedException();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() {
+            throw new NotImplementedException();
         }
 
         #endregion

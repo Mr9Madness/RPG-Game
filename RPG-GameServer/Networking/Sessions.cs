@@ -31,7 +31,7 @@ namespace Networking {
         public delegate void SessionEvent( Session session );
         public event SessionEvent OnSessionStateChanged;
 
-        public List<User> Users = new List<User>();
+        public List<User> UserList = new List<User>();
         private SessionState _state = SessionState.Idle;
         public SessionState State {
             get => _state;
@@ -42,7 +42,7 @@ namespace Networking {
         }
 
         public void Broadcast( Packet packet ) {
-            foreach ( User user in Users.ToList().Where( u => u.ConnectionInfo != null && u.ConnectionInfo.Connected ) )
+            foreach ( User user in UserList.ToList().Where( u => u.ConnectionInfo != null && u.ConnectionInfo.Connected ) )
                 user.ConnectionInfo.Send( packet );
         }
 

@@ -126,7 +126,8 @@ namespace Networking {
             _listener.Stop();
 
             while ( Clients.Where( c => c != null && c.ConnectionInfo.Connected ).ToList().Count > 0 )
-                Clients.ForEach( c => c.ConnectionInfo.Close() );
+                foreach ( User user in Clients )
+                    user.ConnectionInfo.Close();
 
             Clients.Clear();
             ServerActive = false;

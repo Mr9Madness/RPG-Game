@@ -7,9 +7,26 @@ using System.Threading.Tasks;
 namespace Networking {
 
     [Serializable]
-    public class Login {
+    public struct Login {
         public string Username;
         public string SessionPassword;
+    }
+
+    public enum CommandType {
+        UsernameTaken,
+
+    }
+
+    [Serializable]
+    public struct Command {
+        public CommandType Type;
+        public User User;
+    }
+
+    [ Serializable ]
+    public struct PlayerEvent {
+        public User User;
+        public string Status;
     }
 
 }

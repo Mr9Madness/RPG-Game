@@ -24,19 +24,19 @@ namespace RPG_GameServer {
                 socket.DataSent += DataSent;
                 socket.Receive();
 
-                user.Socket = socket;
+                user.ConnectionInfo = socket;
 
-                Data.UserList.Add( user );
+                Data.UserList.AddUser( user );
                 RPGConsole.WriteLine( $"{user.Username} has connected.", ConsoleColor.Green );
 
-                Broadcast( new PlayerEvent( user, true ) );
+                Broadcast( new PlayerEvent{ User = user, Status = "connected" } );
             } else {
                 User oldUser = Data.UserList[ user.Username ];
 
-                if ( oldUser.Socket.RemoteEndPoint.ToString().Split( ':' )[ 0 ] != socket.RemoteEndPoint.ToString().Split( ':' )[ 0 ] )
+                if ( oldUser.ConnectionInfo.RemoteEndPoint.ToString().Split( ':' )[ 0 ] != socket.RemoteEndPoint.ToString().Split( ':' )[ 0 ] )
                     RPGConsole.WriteLine( $"Duplicate username in login attempt: \"{user.Username}\", connection rejected.", ConsoleColor.Red );
 
-                socket.Send( new Command(CommandType.UsernameTaken) );
+                socket.Send( new Command{ Type = CommandType.UsernameTaken, User = user } );
 
                 Thread.Sleep( 10 ); // Make sure that all messages have been sent before disconnecting
                 socket.Close();
@@ -61,10 +61,10 @@ namespace RPG_GameServer {
             User user = Data.UserList[ socket ];
 
             RPGConsole.WriteLine( $"{user.Username}({socket.LocalEndPoint}) Lost connection.{error}", ConsoleColor.Red );
-            Broadcast( new PlayerEvent( user, false ) );
+            Broadcast( new PlayerEvent { User = user, Status = "disconnected" } );
 
             socket.Close();
-            Data.UserList.Remove( socket );
+            Data.UserList.RemoveUser( socket );
 
             Broadcast( Data.UserList );
 
