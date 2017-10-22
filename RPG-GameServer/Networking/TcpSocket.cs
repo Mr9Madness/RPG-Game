@@ -9,7 +9,9 @@ namespace Networking {
     #region Event Handlers
 
     public delegate void TcpSocketEventHandler( TcpSocket socket );
+    public delegate void SocketEventHandler( Socket socket );
     public delegate void TcpSocketErrorEventHandler( TcpSocket socket, Exception ex );
+    public delegate void SocketErrorEventHandler( Socket socket, Exception ex );
 
     #endregion
 
@@ -104,7 +106,7 @@ namespace Networking {
 
                         DataSent?.Invoke( this, data );
                     } catch ( Exception ex ) {
-                        ConnectionLost?.Invoke( this, ex );
+                        ConnectionLost?.Invoke( Client, ex );
                     }
                 }
             );
@@ -120,7 +122,7 @@ namespace Networking {
                     do {
                         if ( !TryReceiveOnce( out Packet packet ) ) {
                             error = true;
-                            ConnectionLost?.Invoke( this, null );
+                            ConnectionLost?.Invoke( Client, null );
                         }
 
                         if ( packet != null )
