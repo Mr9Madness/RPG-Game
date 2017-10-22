@@ -1,41 +1,37 @@
-﻿using System;
-using UnityEngine;
+﻿
+
+using System.Collections.Generic;
+using System.Windows;
 
 namespace Networking {
 
-    public static class UnityExtensionMethods {
-        public static float[] ToArray( this Vector3 v ) => new[] { v.x, v.y, v.z };
-        public static Vector3 ToVector3( this float[] f ) => new Vector3( f[ 0 ], f[ 1 ], f[ 2 ] );
-    }
+    public partial class Data {
 
-    public static class ServerData {
-        public static Players Players = new Players();
-    }
+        #region Event Handlers
 
-    [Serializable]
-    public class PlayerEvent {
-        public Players PlayerList = ServerData.Players;
-        public Player PlayerInQuestion;
+        public delegate void UserListEventHandler( UserList uList );
 
-        public bool IsPlayerAdded;
+        #endregion
 
-        public PlayerEvent( Player playerInQuestion, bool isPlayerAdded ) {
-            PlayerInQuestion = playerInQuestion;
-            IsPlayerAdded = isPlayerAdded;
+        #region Events
+
+        public static event UserListEventHandler OnUserListChanged;
+
+        #endregion
+
+        #region Static Data Containers
+
+        private static UserList _userList = new UserList();
+        public static UserList UserList {
+            get => _userList;
+            set {
+                _userList = value;
+                OnUserListChanged?.Invoke( _userList );
+            }
         }
-    }
+        //public static Sessions Sessions { get; set; } = new Sessions();
 
-    [Serializable]
-    public class EntityTransform {
-        public bool Active = false;
-        private float[] _position = new float[ 3 ];
-        private float[] _rotation = new float[ 3 ];
-        private float[] _scale = new float[ 3 ];
-
-        public Vector3 Position { get => _position.ToVector3(); set => _position = value.ToArray(); }
-        public Vector3 Rotation { get => _rotation.ToVector3(); set => _rotation = value.ToArray(); }
-        public Vector3 Scale { get => _scale.ToVector3(); set => _scale = value.ToArray(); }
+        #endregion
     }
 
 }
-

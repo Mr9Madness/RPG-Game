@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Networking;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RPG_GameServer {
 
@@ -26,8 +27,7 @@ namespace RPG_GameServer {
     public partial class Program {
 
         public static TcpServer Server;
-
-        private static Thread gameThread;
+        
         private static bool _gameActive;
         public static bool GameActive {
             get => _gameActive;
@@ -35,14 +35,12 @@ namespace RPG_GameServer {
                 _gameActive = value;
 
                 if ( value )
-                    gameThread = ThreadHandler.Create( () => {
+                    Task.Run( () => {
                         while ( GameActive ) {
-                            Broadcast( ServerData.Players );
+                            Broadcast( Data.UserList );
                             Thread.Sleep( 10 );
                         }
                     } );
-                else
-                    ThreadHandler.Remove( gameThread );
             }
         }
 
@@ -105,23 +103,23 @@ namespace RPG_GameServer {
                     case "/online":
                     case "/list": {
                             RPGConsole.WriteLine( "Currently online users:\n", ConsoleColor.DarkCyan );
-                            foreach ( Player player in ServerData.Players )
-                                RPGConsole.WriteLine( $"{player.Username} ({player.Socket.LocalEndPoint})" );
+                            foreach ( User user in Data.UserList )
+                                RPGConsole.WriteLine( $"{user.Username} ({user.ConnectionInfo.LocalEndPoint})" );
                         }
                         break;
                     case "/kick": {
                             if ( split.Length <= 1 ) {
-                                RPGConsole.WriteLine( "No parameters given, please specify the player's username like so (without brackets):\r\n/kick [username]", ConsoleColor.Red );
+                                RPGConsole.WriteLine( "No parameters given, please specify the user's username like so (without brackets):\r\n/kick [username]", ConsoleColor.Red );
                                 break;
                             }
-                            if ( !ServerData.Players.Exists( split[ 1 ] ) ) {
-                                RPGConsole.WriteLine( $"Could not find player \"{split[ 1 ]}\"", ConsoleColor.Red );
+                            if ( !Data.UserList.Exists( split[ 1 ] ) ) {
+                                RPGConsole.WriteLine( $"Could not find user \"{split[ 1 ]}\"", ConsoleColor.Red );
                                 break;
                             }
 
-                            Player player = ServerData.Players[ split[ 1 ] ];
-                            Broadcast( $"{player.Username} was kicked from the server." );
-                            ClientDisconnected( player.Socket, null );
+                            User user = Data.UserList[ split[ 1 ] ];
+                            Broadcast( $"{user.Username} was kicked from the server." );
+                            ClientDisconnected( user.ConnectionInfo, null );
                         }
                         break;
                     case "/game": {
@@ -129,9 +127,9 @@ namespace RPG_GameServer {
                                 RPGConsole.WriteLine( $"No parameters given. Usage:\r\n{split[ 0 ]} [active, deactive]", ConsoleColor.Red );
                                 break;
                             }
-                            if ( split[ 1 ] == "active" )
+                            if ( split[ 1 ] == "activate" )
                                 GameActive = true;
-                            if ( split[ 1 ] == "deactive" )
+                            if ( split[ 1 ] == "deactivate" )
                                 GameActive = false;
                         }
                         break;
@@ -152,8 +150,8 @@ namespace RPG_GameServer {
         public static void Broadcast( object data ) { Broadcast( new Packet( data ) ); }
 
         public static void Broadcast( Packet packet ) {
-            foreach ( Player player in ServerData.Players )
-                player.Socket.Send( packet );
+            foreach ( User user in Data.UserList )
+                user.ConnectionInfo.Send( packet );
         }
 
     }

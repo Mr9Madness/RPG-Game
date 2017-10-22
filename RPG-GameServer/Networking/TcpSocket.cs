@@ -2,10 +2,20 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Networking {
 
+    #region Event Handlers
+
+    public delegate void TcpSocketEventHandler( TcpSocket socket );
+    public delegate void TcpSocketErrorEventHandler( TcpSocket socket, Exception ex );
+
+    #endregion
+
     public class TcpSocket : TcpClient {
+
+        #region Events
 
         public event TcpSocketEventHandler ConnectionSuccessful;
         public event TcpSocketErrorEventHandler ConnectionFailed;
@@ -13,9 +23,17 @@ namespace Networking {
         public event TcpDataEventHandler DataReceived;
         public event TcpDataEventHandler DataSent;
 
+        #endregion
+
+        #region Local Variables
+
         public NetworkStream Stream { get { try { return GetStream(); } catch ( Exception ) { return null; } } }
         public EndPoint LocalEndPoint { get { try { return Client.LocalEndPoint; } catch ( Exception ) { return null; } } }
         public EndPoint RemoteEndPoint { get { try { return Client.RemoteEndPoint; } catch ( Exception ) { return null; } } }
+
+        #endregion
+
+        #region Constructors
 
         /// <summary>
         /// Creates a new instance of the <see cref="TcpSocket"/> class.
@@ -30,25 +48,33 @@ namespace Networking {
         /// </summary>
         public TcpSocket( TcpClient socket ) { Client = socket.Client; }
 
+        #endregion
+
+        #region Methods
+
+        #region Connection Methods
+
         public new void Connect( string hostname, int port ) {
+            if ( string.IsNullOrEmpty( hostname ) || port < 1 )
+                return;
+
             if ( !IPAddress.TryParse( hostname, out IPAddress ip ) )
                 ip = Dns.GetHostAddresses( hostname )[ 0 ];
             if ( ip == null )
                 throw new Exception( "Could not resolve hostname \"" + hostname + "\"" );
 
             BeginConnect( ip.ToString(), port, ar => {
-                    try {
-                        EndConnect( ar );
+                try {
+                    EndConnect( ar );
 
-                        if ( ( ( TcpSocket )ar.AsyncState ).Connected ) {
-                            ConnectionSuccessful?.Invoke( this );
-                        } else
-                            ConnectionFailed?.Invoke( this, null );
-                    } catch ( Exception ex ) {
-                        ConnectionFailed?.Invoke( this, ex );
-                    }
-                }, this
-            );
+                    if ( ( ( TcpSocket )ar.AsyncState ).Connected ) {
+                        ConnectionSuccessful?.Invoke( this );
+                    } else
+                        ConnectionFailed?.Invoke( this, null );
+                } catch ( Exception ex ) {
+                    ConnectionFailed?.Invoke( this, ex );
+                }
+            }, this );
         }
 
         public new void Close() { Close( true ); }
@@ -60,13 +86,17 @@ namespace Networking {
             Stream?.Close();
         }
 
+        #endregion
+
+        #region Packet Traffic Methods
+
         public void Send( object data ) { Send( new Packet( data ) ); }
 
         public void Send( Packet data ) {
             if ( Stream == null || !Connected )
                 return;
 
-            ThreadHandler.Create( // Initiate the sender thread
+            Task.Run( // Initiate the sender thread
                 () => {
                     try {
                         byte[] buffer = data.SerializePacket();
@@ -84,21 +114,19 @@ namespace Networking {
             if ( Stream == null || !Connected )
                 return;
 
-            ThreadHandler.Create( // Initiate the receiver thread
+            Task.Run( // Initiate the receiver thread
                 () => {
                     bool error = false;
                     do {
-                        try {
-                            Packet packet = ReceiveOnce();
-                            packet.ParseFailed += PacketParseFailed;
-                            DataReceived?.Invoke( this, packet );
-                        } catch ( Exception ex ) {
+                        if ( !TryReceiveOnce( out Packet packet ) ) {
                             error = true;
-                            if ( ex.ToString().Contains( "WSACancelBlockingCall" ) )
-                                break;
-
-                            ConnectionLost?.Invoke( this, ex );
+                            ConnectionLost?.Invoke( this, null );
                         }
+
+                        if ( packet != null )
+                            packet.ParseFailed += PacketParseFailed;
+
+                        DataReceived?.Invoke( this, packet );
                     } while ( Connected && !error );
                 }
             );
@@ -109,7 +137,7 @@ namespace Networking {
             try {
                 packet = ReceiveOnce( bufferSize );
                 return true;
-            } catch ( SocketException ) { return false; }
+            } catch ( Exception ) { return false; }
         }
 
         public Packet ReceiveOnce( int bufferSize = 4096 ) {
@@ -122,7 +150,15 @@ namespace Networking {
             return new Packet( new List<byte>( bytes ).GetRange( 0, length ) );
         }
 
+        #endregion
+
+        #region Event Callbacks
+
         private void PacketParseFailed( Packet packet ) { Console.WriteLine( "Failed to convert packet with type \"" + packet.Type + "\" to type \"string\"" ); }
+
+        #endregion
+
+        #endregion
 
     }
 
