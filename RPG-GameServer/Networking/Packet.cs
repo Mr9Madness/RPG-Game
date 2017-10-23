@@ -2,15 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 
 namespace Networking {
 
     #region Event Handlers
 
-    public delegate void TcpPacketEventHandler( Packet packet );
+    public delegate void PacketEventHandler( Packet packet );
 
     #endregion
 
@@ -18,7 +16,7 @@ namespace Networking {
 
         #region Events
 
-        public event TcpPacketEventHandler ParseFailed;
+        public event PacketEventHandler ParseFailed;
 
         #endregion
 
