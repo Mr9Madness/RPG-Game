@@ -21,16 +21,11 @@ public class PlayerMovement : MonoBehaviour {
     private bool isGrounded { get { return Physics.Raycast( transform.position + Vector3.up * 0.1f, Vector3.down, MaxDistance ); } }
     private bool isSprinting;
 
-    [Range( 1f, 100f )]
-    public float Strength = 50f;
-    [Range( 0.1f, 1f )]
-    public float MaxDistance = 0.3f;
-    [Range( 1f, 10f )]
-    public float speedMultiplier = 4f;
-    [Range( 0.1f, 1f )]
-    public float WalkMultiplier = 0.5f;
-    [Range( 360f, 720f )]
-    public float rotationSpeed = 450f;
+    [ Range( 1f, 100f ) ]   public float Strength           = 50f;
+    [ Range( 0.1f, 1f ) ]   public float MaxDistance        = 0.3f;
+    [ Range( 1.0f, 10f ) ]  public float speedMultiplier    = 4f;
+    [ Range( 0.1f, 1f ) ]   public float WalkMultiplier     = 0.5f;
+    [ Range( 360f, 720f ) ] public float rotationSpeed      = 450f;
 
     private float massCalculatedForce { get { return r.mass * Strength; } }
 
