@@ -1,8 +1,4 @@
 ﻿
-
-using System.Collections.Generic;
-using System.Windows;
-
 namespace Networking {
 
     public partial class Data {

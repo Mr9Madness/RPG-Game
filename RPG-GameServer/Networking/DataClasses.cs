@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
 
 namespace Networking {
 
     [Serializable]
     public struct Login {
         public string Username;
-        public string SessionPassword;
+        public IPEndPoint LocalEndPoint;
+        public IPEndPoint RemoteEndPoint;
     }
 
     public enum CommandType {

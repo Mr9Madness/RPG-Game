@@ -1,14 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace Networking {
 
     #region Event Handlers
 
+    public delegate void UdpDataEventHandler( UdpSocket socket, Packet packet );
     public delegate void TcpDataEventHandler( TcpSocket socket, Packet packet );
 
     #endregion
