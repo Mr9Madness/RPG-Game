@@ -22,15 +22,14 @@ public class PlayerMovement : MonoBehaviour {
     private bool isSprinting;
 
     [ Range( 1f, 100f ) ]   public float Strength           = 50f;
-    [ Range( 0.1f, 1f ) ]   public float MaxDistance        = 0.3f;
-    [ Range( 1.0f, 10f ) ]  public float speedMultiplier    = 4f;
-    [ Range( 0.1f, 1f ) ]   public float WalkMultiplier     = 0.5f;
+    [ Range( 1, 3 ) ]   public float MaxDistance        = 1.1f;
+    [ Range( 0.1f, 20 ) ]   public float speedMultiplier    = 2;
+    [ Range( 0.1f, 10 ) ]   public float WalkMultiplier     = 1;
     [ Range( 360f, 720f ) ] public float rotationSpeed      = 450f;
 
     private float massCalculatedForce { get { return r.mass * Strength; } }
 
     private Transform cam;
-    private Vector3 rawMoveDirection;
     private Rigidbody r;
 
     // Use this for initialization
@@ -42,7 +41,8 @@ public class PlayerMovement : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void FixedUpdate() {
+    void FixedUpdate()
+    {
         // If escape is pressed
         if ( Input.GetKeyDown( KeyCode.Escape ) )
             // Toggle the cursor for debugging
@@ -50,38 +50,30 @@ public class PlayerMovement : MonoBehaviour {
 
         // If space is pressed
         if ( Input.GetKeyDown( KeyCode.Space ) && isGrounded )
-            // Jump with a velocity of 6 units
-            r.AddForce( new Vector3(0, massCalculatedForce * speedMultiplier * Time.fixedDeltaTime, 0), ForceMode.Force );
+        {
+            r.AddForce( new Vector3( 0, massCalculatedForce  * ( !isSprinting ? WalkMultiplier : speedMultiplier )* Time.deltaTime, 0 ), ForceMode.Force );
+        }
+        // Jump with a velocity of 6 units
 
         // Get the horizontal and vertical input from the user
-        float hInput = Input.GetAxisRaw( "Horizontal" ) * speedMultiplier;
-        float vInput = Input.GetAxisRaw( "Vertical" ) * speedMultiplier;
+        float hInput = Input.GetAxisRaw( "Horizontal" ) * ( !isSprinting ? WalkMultiplier : speedMultiplier ) * Time.deltaTime;
+        float vInput = Input.GetAxisRaw( "Vertical" ) * ( !isSprinting ? WalkMultiplier : speedMultiplier ) * Time.deltaTime;
 
         // ======== Player Movement Mechanics ========
 
         // -------- Move --------
 
-        // Create 2 directional vector3's
-        Vector3 forward = cam.forward;
-        Vector3 right = cam.right;
-
-        // Prepare the vector3's made above
-        forward.y = 0f;
-        right.y = 0f;
-        forward.Normalize();
-        right.Normalize();
-
         // If the player is grounded
-        if ( isGrounded ) {
+        if ( isGrounded )
+        {
             isSprinting = Input.GetKey( KeyCode.LeftShift );
             // Update the rawMoveDirection with user input and the directions together
-            rawMoveDirection = forward * vInput + right * hInput;
         }
 
         // Update the position to the new position
-        r.AddForce( rawMoveDirection.normalized * massCalculatedForce * speedMultiplier * 2f * ( !isSprinting ? WalkMultiplier : 1 ) * Time.fixedDeltaTime, ForceMode.Impulse );
-        //transform.position += rawMoveDirection.normalized * speedMultiplier * ( !isSprinting ? WalkMultiplier : 1 ) * Time.fixedDeltaTime;
+        r.AddForce( new Vector3( 0, 0, vInput ) * massCalculatedForce * ( !isSprinting ? WalkMultiplier : speedMultiplier ) * Time.fixedDeltaTime, ForceMode.Impulse );
 
+        transform.rotation = Quaternion.Euler( transform.rotation.x, transform.rotation.y + hInput, transform.rotation.z );
         // -------- Rotate --------
 
         // Make sure that nothing happens after this unless the user moved.
@@ -89,7 +81,7 @@ public class PlayerMovement : MonoBehaviour {
             return;
 
         // Convert the calculated move direction to a Quaternion
-        Quaternion rotateTo = Quaternion.LookRotation( rawMoveDirection );
+        Quaternion rotateTo = Quaternion.LookRotation( new Vector3( 0, 0, vInput ) );
         // Gradually rotate towards the new rotation so the movement is smooth
         r.MoveRotation( Quaternion.RotateTowards( transform.rotation, rotateTo, rotationSpeed * Time.fixedDeltaTime ) );
     }
