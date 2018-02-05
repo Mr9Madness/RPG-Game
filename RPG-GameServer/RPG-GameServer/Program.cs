@@ -5,84 +5,80 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using Networking;
+using UdpNetworking;
 
 namespace RPG_GameServer {
 
-    public class UdpServer {
+    public class Program {
 
-        private static Socket _receiver;
-
-        private static List<ExtEndPoint> _clientList = new List<ExtEndPoint>();
-
-        public static int Port = 8080;
-
-        private static void InitializeSockets() {
-            _receiver = new Socket( AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp );
+        private static void OnPacketReceived( UdpSocket s, Packet p ) {
+            Console.WriteLine( $"RECV ({p.TypeName})\"{p.Content}\"({p.AsByteArray.Length}) FROM {p.RemoteEP?.ToString() ?? "NULL"} ON {s.LocalEP?.ToString() ?? "NULL"}" );
         }
 
-        private static ExtEndPoint GetClient( ExtEndPoint ep ) => _clientList.FirstOrDefault( c => c.Address.Equals( ep.Address ) && c.RPort == ep.RPort && c.SPort == ep.SPort );
-        private static ExtEndPoint GetClient( IPEndPoint ep ) => _clientList.FirstOrDefault( c => c.Address.Equals( ep.Address ) && ( c.RPort == ep.Port || c.SPort == ep.Port ) );
+        private static void OnPacketSent( UdpSocket s, Packet p ) {
+            Console.WriteLine( $"SENT ({p.TypeName})\"{p.Content}\"({p.AsByteArray.Length}) TO {s.RemoteEP?.ToString() ?? "NULL"} ON {s.LocalEP?.ToString() ?? "NULL"}" );
+        }
+
+        private static void OnSocketAccepted( UdpServer serv, UdpSocket s ) {
+            if ( Clients.Any( c => c.RemoteEP.ToString() == s.RemoteEP.ToString() ) )
+                return;
+
+            Clients.Add( s );
+            Console.WriteLine( $"{s.RemoteEP} has connected." );
+        }
+
+        private static UdpServer _listener;
+        public static List<UdpSocket> Clients = new List<UdpSocket>();
 
         public static void Main( string[] args ) {
-            InitializeSockets();
+            UdpServer.OnSocketAccepted += OnSocketAccepted;
+            UdpSocket.OnPacketReceived += OnPacketReceived;
+            UdpSocket.OnPacketSent += OnPacketSent;
 
-            _receiver.Bind( new IPEndPoint( IPAddress.Any, Port ) );
+            _listener = new UdpServer( 8080 );
 
+            CancellationTokenSource cts = new CancellationTokenSource();
             Task.Run( () => {
                 while ( true ) {
-                    ReceivePacket( out Packet p, out ExtEndPoint fromEP );
-                    Console.WriteLine( $"RECV ({p.TypeName})\"{p.Content}\" FROM {fromEP} WITH RECVSOC" );
+                    UdpSocket s = _listener.AcceptSocket();
 
-                    if ( GetClient( fromEP.SEndPoint ) == null )
-                        _clientList.Add( fromEP );
+                    if ( Clients.Any( c => c.RemoteEP.ToString() == s.RemoteEP.ToString() ) )
+                        return;
 
-                    SendPacketTo( p, fromEP.REndPoint );
-                    Console.WriteLine( $"SENT ({p.TypeName})\"{p.Content}\" TO {fromEP.REndPoint} WITH SENDSOC" );
+                    // ReSharper disable once MethodSupportsCancellation
+                    s.StartReceiving();
+                    Clients.Add( s );
                 }
-            } );
+            }, cts.Token );
 
             while ( true ) {
                 string input = Console.ReadLine();
                 if ( string.IsNullOrWhiteSpace( input ) )
                     continue;
 
-                if ( input == "/nc" ) {
+                if ( input.ToLower() == "/nc".ToLower() ) {
                     Process.Start( "Client.exe" );
                     continue;
                 }
+                if ( input.ToLower() == "/startlistening".ToLower() ) {
+                    Task.Run( () => {
+                        while ( true ) {
+                            UdpSocket s = _listener.AcceptSocket();
 
-                Packet p = new Packet( input );
-                _clientList.ForEach( c => {
-                    SendPacketTo( p, c.REndPoint );
-                    Console.WriteLine( $"SENT ({p.TypeName})\"{p.Content}\" TO {c.REndPoint} WITH SENDSOC" );
-                } );
+                            if ( Clients.All( c => c.RemoteEP.ToString() != s.RemoteEP.ToString() ) )
+                                Clients.Add( s );
+                        }
+                    }, cts.Token );
+                }
+                if ( input.ToLower() == "/stoplistening".ToLower() ) {
+                    cts.Cancel();
+                    continue;
+                }
+                
+                Clients.ForEach( c => c.SendAsync( input ) );
             }
-        }
-
-        public static void SendPacketTo( object value, IPEndPoint remoteEP ) => SendPacketTo( new Packet( value ), remoteEP );
-        public static void SendPacketTo( Packet packet, IPEndPoint remoteEP ) {
-            Socket _sender = new Socket( AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp );
-            _sender.Bind( new IPEndPoint( IPAddress.Any, remoteEP.Address.IsLocal() ? 0 : Port ) );
-            _sender.Connect( remoteEP );
-            _sender.SendTo( packet.SetOrigin( _receiver.LocalEndPoint.GetPort(), _sender.LocalEndPoint.GetPort() ).AsByteArray, remoteEP );
-            _sender.Close();
-        }
-
-        public static void ReceivePacket( out Packet packet, out ExtEndPoint remoteEP ) => remoteEP = ReceivePacket( out packet, 4096 );
-        public static void ReceivePacket( out Packet packet, out ExtEndPoint remoteEP, int maxBufferSize ) => remoteEP = ReceivePacket( out packet, maxBufferSize );
-        public static ExtEndPoint ReceivePacket( out Packet packet ) => ReceivePacket( out packet, 4096 );
-        public static ExtEndPoint ReceivePacket( out Packet packet, int maxBufferSize ) {
-            byte[] buffer = new byte[ maxBufferSize ];
-            EndPoint fromEP = new IPEndPoint( IPAddress.Any, 0 );
-            int len = _receiver.ReceiveFrom( buffer, ref fromEP );
-            packet = Packet.FromByteArray( buffer.ToList().GetRange( 0, len ) ).SetOrigin( fromEP.GetAddress() );
-
-            if ( packet.RemoteEP.RPort == 0 )
-                packet.RemoteEP.RPort = fromEP.GetPort();
-
-            return packet.RemoteEP;
         }
 
     }
